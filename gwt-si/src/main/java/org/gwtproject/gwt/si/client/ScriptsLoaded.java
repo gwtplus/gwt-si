@@ -2,7 +2,7 @@ package org.gwtproject.gwt.si.client;
 
 import com.google.gwt.core.client.JavaScriptObject;
 
-public class ScriptsLoaded extends JavaScriptObject {
+class ScriptsLoaded extends JavaScriptObject {
 
 	protected ScriptsLoaded() {
 
