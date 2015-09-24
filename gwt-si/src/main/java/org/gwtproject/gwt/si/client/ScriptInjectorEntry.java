@@ -30,24 +30,27 @@ public abstract class ScriptInjectorEntry implements EntryPoint {
 
 	@Override
 	public void onModuleLoad() {
+		onBeforeScriptLoad();
+
 		mScriptRefsLoaded = ScriptRefsLoaded.get();
 		mScriptsLoaded = ScriptsLoaded.get();
 
 		maybeFetchScriptRefsFile();
 	}
-	
+
 	/**
 	 * Name of the file, if null, will be ignored
+	 * 
 	 * @return
 	 */
 	protected String getScriptRefsFileName() {
 		return "__gwt_scriptRefs.json";
 	}
-	
+
 	protected boolean preloadWithAjax() {
 		return false;
 	}
-	
+
 	protected boolean runScriptLoadAsync() {
 		return true;
 	}
@@ -57,13 +60,13 @@ public abstract class ScriptInjectorEntry implements EntryPoint {
 			onScriptLoad0();
 		} else if (mScriptRefsLoaded.hasScriptRef(getFilePath())) {
 			Entry sr = mScriptRefsLoaded.getScriptRef(getFilePath());
-			if(sr.isLoaded()) {
-				//already loaded,
+			if (sr.isLoaded()) {
+				// already loaded,
 				onScriptLoad0();
 			} else {
-				//still loading
+				// still loading
 				sr.addListener(new EventListener() {
-					
+
 					@Override
 					public void onBrowserEvent(Event event) {
 						onScriptLoad0();
@@ -81,9 +84,9 @@ public abstract class ScriptInjectorEntry implements EntryPoint {
 
 	private void fetchScriptRefsFile() {
 		final String path = getFilePath();
-		
+
 		mScriptRefsLoaded.setScriptRef(path, Entry.newEntry());
-		
+
 		RequestBuilder rb = new RequestBuilder(RequestBuilder.GET, path);
 		rb.setCallback(new RequestCallback() {
 
@@ -93,7 +96,7 @@ public abstract class ScriptInjectorEntry implements EntryPoint {
 
 				if (status == Response.SC_OK) {
 					String text = response.getText();
-					
+
 					parseScriptsFile0(text);
 				} else {
 					onScriptError(new Exception("Wrong status code: " + status));
@@ -105,7 +108,7 @@ public abstract class ScriptInjectorEntry implements EntryPoint {
 				onScriptError(new Exception(exception));
 			}
 		});
-		
+
 		try {
 			rb.send();
 		} catch (RequestException e) {
@@ -116,7 +119,7 @@ public abstract class ScriptInjectorEntry implements EntryPoint {
 	private void parseScriptsFile0(String text) {
 		List<String> scripts = parseScriptsFile(text);
 
-		loadScripts(new LinkedList<>(scripts));
+		loadScripts(new LinkedList<>(scripts), scripts.size());
 	}
 
 	protected List<String> parseScriptsFile(String text) {
@@ -133,14 +136,14 @@ public abstract class ScriptInjectorEntry implements EntryPoint {
 		return scripts;
 	}
 
-	private void loadScripts(final Queue<String> scripts) {
+	private void loadScripts(final Queue<String> scripts, final int total) {
 		if (scripts.isEmpty()) {
 			Entry e = mScriptRefsLoaded.getScriptRef(getFilePath());
 			e.setLoaded(true);
-			//let know other entry points waiting for scripts from
-			//the same file
+			// let know other entry points waiting for scripts from
+			// the same file
 			e.fireListeners(null);
-			
+
 			onScriptLoad0();
 			return;
 		}
@@ -153,14 +156,14 @@ public abstract class ScriptInjectorEntry implements EntryPoint {
 			if (loaded) {
 				scripts.poll();
 
-				loadScripts(scripts);
+				loadScripts(scripts, total);
 			} else {
 				// still loading
 				// wait few ms and try again
 				new Timer() {
 					@Override
 					public void run() {
-						loadScripts(scripts);
+						loadScripts(scripts, total);
 					}
 				}.schedule(100);
 			}
@@ -179,8 +182,10 @@ public abstract class ScriptInjectorEntry implements EntryPoint {
 				scripts.poll();
 
 				mScriptsLoaded.setScript(script, true);
+				onScriptProgress(total - scripts.size(), total);
+				// TODO: support __gwt_statsEvent
 
-				loadScripts(scripts);
+				loadScripts(scripts, total);
 			}
 
 			@Override
@@ -189,19 +194,18 @@ public abstract class ScriptInjectorEntry implements EntryPoint {
 			}
 		});
 
-		// TODO: support progress using method override here and _gwt_stats
 		fu.inject();
 	}
 
-	private void onScriptLoad0() {		
-		if(runScriptLoadAsync()) {
+	private void onScriptLoad0() {
+		if (runScriptLoadAsync()) {
 			GWT.runAsync(new RunAsyncCallback() {
-				
+
 				@Override
 				public void onSuccess() {
 					onScriptLoad();
 				}
-				
+
 				@Override
 				public void onFailure(Throwable reason) {
 					onScriptError(new Exception(reason));
@@ -211,17 +215,47 @@ public abstract class ScriptInjectorEntry implements EntryPoint {
 			onScriptLoad();
 		}
 	}
+
+	/**
+	 * Called as a first thing in {@link #onModuleLoad()} Place for
+	 * initialization that doesn't depend on external JavaScript libraries
+	 */
+	protected void onBeforeScriptLoad() {
+		
+	}
+
+	/**
+	 * Information about the progress of the loading process
+	 * Reported only to single entry point - the one which performs fetching
+	 * In case of multiply entry points in the same gwt module, use
+	 * common method which is called from all of them.
+	 * @param current
+	 * @param total
+	 */
+	protected void onScriptProgress(int current, int total){
+		
+	}
 	
+	/**
+	 * Called when all JavaScript dependencies have been injected
+	 */
 	protected abstract void onScriptLoad();
 
-	protected abstract void onScriptError(Exception e);
+	/**
+	 * Called when there was an error while loading JavaScript dependencies
+	 * 
+	 * @param e
+	 */
+	protected void onScriptError(Exception e) {
+		
+	}
 }
 
 // $stats = $wnd_0.__gwtStatsEvent?function(a){ return
 // $wnd_0.__gwtStatsEvent(a); } : null;
-// $stats && $stats({moduleName:'GeoDev', sessionId:$sessionId_0,
+// $stats && $stats({moduleName:'Simple', sessionId:$sessionId_0,
 // subSystem:'startup', evtGroup:'loadExternalRefs', millis:(new
 // Date).getTime(), type:'begin'});
-// $stats && $stats({moduleName:'GeoDev', sessionId:$sessionId_0,
+// $stats && $stats({moduleName:'Simple', sessionId:$sessionId_0,
 // subSystem:'startup', evtGroup:'loadExternalRefs', millis:(new
 // Date).getTime(), type:'end'});
