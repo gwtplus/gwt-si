@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE module PUBLIC "-//Google, Inc.//DTD GWT Module Descriptor//EN" "https://github.com/gwtproject/gwt/raw/2.7.0/distro-source/core/src/gwt-module.dtd">
+<module rename-to="Simple">
+	<inherits name="com.google.gwt.user.User" />
+	<inherits name="org.gwtproject.gwt.si.ScriptInjector" />
+	
+	<script src="someDir/someScript.js" />
+	<stylesheet src="someDir/someStyle.css"/>
+
+	<entry-point class="simple.client.SimpleEntry" />
+</module>

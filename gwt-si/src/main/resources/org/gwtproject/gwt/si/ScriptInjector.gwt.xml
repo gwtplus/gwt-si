@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE module PUBLIC "-//Google, Inc.//DTD GWT Module Descriptor//EN" "https://github.com/gwtproject/gwt/raw/2.7.0/distro-source/core/src/gwt-module.dtd">
+<module rename-to="ScriptInjector">
+	<define-linker name="si" class="org.gwtproject.gwt.si.linker.ScriptInjectorLinker" />
+	
+	<define-configuration-property name="si.scriptRefsFileName" is-multi-valued="FALSE"/>
+	<define-configuration-property name="si.removeScriptRefs" is-multi-valued="FALSE"/>
+
+	<set-configuration-property name="si.scriptRefsFileName" value="__gwt_scriptRefs.json"/>
+	<set-configuration-property name="si.removeScriptRefs" value="true"/>
+	
+	<add-linker name="si" />
+</module>
